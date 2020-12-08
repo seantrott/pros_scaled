@@ -7,7 +7,7 @@ import re
 from os import listdir
 
 ### PATHS
-DATA_PATH = "data/raw/stimuli"
+DATA_PATH = "data/raw/scaled_stimuli"
 SAVE_PATH = "experiment/items.html"
 
 
@@ -28,7 +28,7 @@ MODALS = ["window", "temp", "Spanish", "door", "piano", "box"]
 DECLARATIVES = ["back", "soup", "car", "laptop", "phone", "office"]
 
 ## Path to stimuli (from experimental folder)
-STIM_PATH = "../../data/raw/stimuli/"
+STIM_PATH = "../../data/raw/scaled_stimuli/"
 
 ## Load file names
 filenames = [f for f in listdir(DATA_PATH)]
