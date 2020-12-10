@@ -90,9 +90,11 @@ var consent_trial = {
 var intro2 = {
     type: 'instructions',
     pages: [
-        'Congratulations, you passed the audio test! Now you can begin the experiment. Click "Next" to continue.', 
-        'On each page, you will hear a sentence spoken aloud. You will have to decide whether the speaker intended that sentence as a request. <p>For example, the sentence "Can you lift that box?" could be a <b>request</b> (e.g. like saying, "Please lift that box"), or a <b>question</b> about the listener\'s ability (e.g. asking whether or not the listener would be able to lift the box). <p>After you listen to the sentence, indicate whether you think it is a request or not by pressing  <b>Yes</b> or <b>No</b>.',
-          'Listen carefully to each utterance. You will <b>not</b> be able to hear it again.<p>Good luck!'
+        'Congratulations, you passed the audio test! Now you can begin the experiment. Click "Next" to read the instructions.', 
+        'Many English sentences can be interpreted in multiple ways. <p>For example, the sentence "Can you pass the salt?" could be a <b>request</b> (e.g., like saying, "Please pass the salt"), or a <b>question</b> about the listener\'s physical ability to do something (e.g., asking whether or not the listener would be able to pass the salt). <p>Similarly, the sentence "My steak is overdone" might be a <b>complaint</b> about the quality of the meal, or it might be a <b>request</b> for a waiter to bring a new steak.',
+        'In this experiment, we are interested in which sentences you think are requests. On each trial, you will hear a sentence <i>spoken aloud</i>. You will have to decide whether the speaker intended that sentence to be interpreted as a request.',
+        'Remember: each trial will consist of listening to an utterance. After you listen to the utterance, indicate whether you think it is a request or not by pressing  <b>Yes</b> or <b>No</b>.',
+        'Listen carefully to each utterance. You will <b>not</b> be able to hear it again.<p>Good luck!'
     ],
     show_clickable_nav: true,
     on_finish: function(){jsPsych.setProgressBar(jsPsych.getProgressBarCompleted()+(1/NUM_TRIALS))}
