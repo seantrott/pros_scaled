@@ -1,0 +1,13 @@
+"","stimNum","topic","form","mean_request","sd_request"
+"1",1,"car","nonconventional",0.128205128205128,0.336481965668464
+"2",2,"back","nonconventional",0.128205128205128,0.336481965668464
+"3",3,"box","conventional",0.923076923076923,0.268194093760604
+"4",4,"door","conventional",0.987179487179487,0.11322770341446
+"5",5,"laptop","nonconventional",0.115384615384615,0.321553422305848
+"6",6,"office","nonconventional",0.205128205128205,0.40640886452951
+"7",7,"phone","nonconventional",0.166666666666667,0.375090176747727
+"8",8,"piano","conventional",0.67948717948718,0.469694284202736
+"9",9,"soup","nonconventional",0.192307692307692,0.396664414010959
+"10",10,"spanish","conventional",0.91025641025641,0.287664010176078
+"11",11,"window","conventional",1,0
+"12",12,"temperature","conventional",0.974358974358974,0.159084962545255
