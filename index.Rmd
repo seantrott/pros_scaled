@@ -15,4 +15,4 @@ knitr::opts_chunk$set(echo = TRUE, dpi=300)
 
 People often speak indirectly. 
 
-[Link to report](seantrott.github.io/pros_scaled)
+[Link to report](src/analysis/exp1/exp1.html)
