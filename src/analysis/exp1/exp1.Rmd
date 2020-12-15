@@ -178,7 +178,7 @@ slope_prior / sqrt(var_re)
 ```
 
 
-## Which acoustic features predict pragmatic interpretation?
+## Q2: Which acoustic features predict pragmatic interpretation?
 
 ### Load acoustic features data
 
