@@ -15,4 +15,12 @@ knitr::opts_chunk$set(echo = TRUE, dpi=300)
 
 People often make requests indirectly. For example, "Can you open that window?" is literally a question about the hearer's ability to open the window, but is often intended as a request for the hearer to actually do so.
 
-[Link to report](src/analysis/exp1/exp1.html)
+**TODO**: Add intro text.
+
+# Experiment 1
+
+In Experiment 1, we asked whether human comprehenders could recover the intended interpretation of a potential indirect request from its prosody alone. Overall, the answer was **yes**: participants successfully determined whether or not a speaker was making a request about 61% of the time (where chance was 50%).
+
+We also identified a set of acoustic features that predicted participants' pragmatic interpretations, including `F0 Slope` and `Number of Voiced Frames`. 
+
+The full report can be found [here](src/analysis/exp1/exp1.html).
