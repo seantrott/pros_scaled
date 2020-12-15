@@ -647,9 +647,9 @@ df_tidy %&gt;%
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -660,28 +660,28 @@ model_response_no_slope = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_slope_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_slope_interaction: response ~ slope_f0_z_score + mean_f0_z_score * form + duration_f0_z_score * 
+## model_response_no_slope_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
+## model_response_no_slope_interaction:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_slope_interaction:     speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_slope_interaction: response ~ slope_f0_z_score + mean_f0_z_score * form + duration_f0_z_score * 
-## model_response_no_slope_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_slope_interaction:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_slope_interaction:     (1 | subject) + (1 | stimNum)
 ##                                     npar    AIC    BIC  logLik deviance  Chisq
-## model_response_full                   19 4841.0 4963.1 -2401.5   4803.0       
-## model_response_no_slope_interaction   26 4708.8 4875.8 -2328.4   4656.8 146.22
+## model_response_no_slope_interaction   18 4882.3 4998.0 -2423.2   4846.3       
+## model_response_full                   19 4841.0 4963.1 -2401.5   4803.0 43.319
 ##                                     Df Pr(&gt;Chisq)    
-## model_response_full                                  
-## model_response_no_slope_interaction  7  &lt; 2.2e-16 ***
+## model_response_no_slope_interaction                  
+## model_response_full                  1  4.652e-11 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <pre class="r"><code>anova(model_response_no_slope_interaction, model_response_no_slope)</code></pre>
@@ -689,18 +689,18 @@ model_response_no_slope = glmer(data = df_merged_audio,
 ## Models:
 ## model_response_no_slope: response ~ mean_f0_z_score * form + duration_f0_z_score * form + 
 ## model_response_no_slope:     range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_slope:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_slope:     (1 | subject) + (1 | stimNum)
+## model_response_no_slope:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_slope:     speaker) + (1 | stimNum)
 ## model_response_no_slope_interaction: response ~ slope_f0_z_score + mean_f0_z_score * form + duration_f0_z_score * 
 ## model_response_no_slope_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_slope_interaction:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_slope_interaction:     (1 | subject) + (1 | stimNum)
-##                                     npar    AIC    BIC  logLik deviance  Chisq
-## model_response_no_slope               25 4733.7 4894.4 -2341.9   4683.7       
-## model_response_no_slope_interaction   26 4708.8 4875.8 -2328.4   4656.8 26.956
+## model_response_no_slope_interaction:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_slope_interaction:     speaker) + (1 | stimNum)
+##                                     npar    AIC    BIC  logLik deviance Chisq
+## model_response_no_slope               17 4896.5 5005.7 -2431.2   4862.5      
+## model_response_no_slope_interaction   18 4882.3 4998.0 -2423.2   4846.3 16.15
 ##                                     Df Pr(&gt;Chisq)    
 ## model_response_no_slope                              
-## model_response_no_slope_interaction  1  2.081e-07 ***
+## model_response_no_slope_interaction  1  5.853e-05 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 </div>
@@ -714,9 +714,9 @@ model_response_no_slope = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -727,28 +727,28 @@ model_response_no_mean_f0 = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_mean_f0_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_mean_f0_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score + duration_f0_z_score * 
+## model_response_no_mean_f0_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
+## model_response_no_mean_f0_interaction:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_mean_f0_interaction:     speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_mean_f0_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score + duration_f0_z_score * 
-## model_response_no_mean_f0_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_mean_f0_interaction:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_mean_f0_interaction:     (1 | subject) + (1 | stimNum)
 ##                                       npar    AIC    BIC  logLik deviance
+## model_response_no_mean_f0_interaction   18 4850.4 4966.1 -2407.2   4814.4
 ## model_response_full                     19 4841.0 4963.1 -2401.5   4803.0
-## model_response_no_mean_f0_interaction   26 4690.6 4857.6 -2319.3   4638.6
 ##                                        Chisq Df Pr(&gt;Chisq)    
-## model_response_full                                           
-## model_response_no_mean_f0_interaction 164.39  7  &lt; 2.2e-16 ***
+## model_response_no_mean_f0_interaction                         
+## model_response_full                   11.461  1  0.0007107 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <pre class="r"><code>anova(model_response_no_mean_f0_interaction, model_response_no_mean_f0)</code></pre>
@@ -756,18 +756,18 @@ model_response_no_mean_f0 = glmer(data = df_merged_audio,
 ## Models:
 ## model_response_no_mean_f0: response ~ slope_f0_z_score * form + duration_f0_z_score * form + 
 ## model_response_no_mean_f0:     range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_mean_f0:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_mean_f0:     (1 | subject) + (1 | stimNum)
+## model_response_no_mean_f0:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_mean_f0:     speaker) + (1 | stimNum)
 ## model_response_no_mean_f0_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score + duration_f0_z_score * 
 ## model_response_no_mean_f0_interaction:     form + range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_mean_f0_interaction:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_mean_f0_interaction:     (1 | subject) + (1 | stimNum)
+## model_response_no_mean_f0_interaction:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_mean_f0_interaction:     speaker) + (1 | stimNum)
 ##                                       npar    AIC    BIC  logLik deviance
-## model_response_no_mean_f0               25 4689.5 4850.2 -2319.8   4639.5
-## model_response_no_mean_f0_interaction   26 4690.6 4857.6 -2319.3   4638.6
+## model_response_no_mean_f0               17 4849.4 4958.6 -2407.7   4815.4
+## model_response_no_mean_f0_interaction   18 4850.4 4966.1 -2407.2   4814.4
 ##                                        Chisq Df Pr(&gt;Chisq)
 ## model_response_no_mean_f0                                 
-## model_response_no_mean_f0_interaction 0.9464  1     0.3306</code></pre>
+## model_response_no_mean_f0_interaction 0.9544  1     0.3286</code></pre>
 </div>
 <div id="f0-duration-number-of-voiced-frames" class="section level4">
 <h4>F0 duration (number of voiced frames)</h4>
@@ -779,9 +779,9 @@ model_response_no_mean_f0 = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -792,29 +792,28 @@ model_response_no_f0_dur = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        already_heard_by_speaker +
-                        form * speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_f0_dur_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_f0_dur_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
+## model_response_no_f0_dur_interaction:     duration_f0_z_score + range_f0_z_score * form + sd_f0_z_score * 
+## model_response_no_f0_dur_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
+## model_response_no_f0_dur_interaction:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_f0_dur_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
-## model_response_no_f0_dur_interaction:     duration_f0_z_score + range_f0_z_score * form + sd_f0_z_score * 
-## model_response_no_f0_dur_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
-## model_response_no_f0_dur_interaction:     form + form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_dur_interaction:     (1 | stimNum)
 ##                                      npar    AIC    BIC  logLik deviance  Chisq
-## model_response_full                    19 4841.0 4963.1 -2401.5   4803.0       
-## model_response_no_f0_dur_interaction   26 4819.3 4986.3 -2383.6   4767.3 35.706
+## model_response_no_f0_dur_interaction   18 4982.6 5098.3 -2473.3   4946.6       
+## model_response_full                    19 4841.0 4963.1 -2401.5   4803.0 143.64
 ##                                      Df Pr(&gt;Chisq)    
-## model_response_full                                   
-## model_response_no_f0_dur_interaction  7  8.236e-06 ***
+## model_response_no_f0_dur_interaction                  
+## model_response_full                   1  &lt; 2.2e-16 ***
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <pre class="r"><code>anova(model_response_no_f0_dur_interaction, model_response_no_f0_dur)</code></pre>
@@ -822,19 +821,18 @@ model_response_no_f0_dur = glmer(data = df_merged_audio,
 ## Models:
 ## model_response_no_f0_dur: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_dur:     range_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_f0_dur:     form + sd_intensity_z_score * form + already_heard_by_speaker + 
-## model_response_no_f0_dur:     form * speaker + (1 | subject) + (1 | stimNum)
+## model_response_no_f0_dur:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_f0_dur:     speaker) + (1 | stimNum)
 ## model_response_no_f0_dur_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_dur_interaction:     duration_f0_z_score + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_no_f0_dur_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
-## model_response_no_f0_dur_interaction:     form + form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_dur_interaction:     (1 | stimNum)
+## model_response_no_f0_dur_interaction:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
 ##                                      npar    AIC    BIC  logLik deviance  Chisq
-## model_response_no_f0_dur               25 4823.7 4984.4 -2386.9   4773.7       
-## model_response_no_f0_dur_interaction   26 4819.3 4986.3 -2383.6   4767.3 6.4466
+## model_response_no_f0_dur               17 4984.7 5094.0 -2475.4   4950.7       
+## model_response_no_f0_dur_interaction   18 4982.6 5098.3 -2473.3   4946.6 4.1147
 ##                                      Df Pr(&gt;Chisq)  
 ## model_response_no_f0_dur                            
-## model_response_no_f0_dur_interaction  1    0.01112 *
+## model_response_no_f0_dur_interaction  1    0.04251 *
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 </div>
@@ -848,9 +846,9 @@ model_response_no_f0_dur = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -861,49 +859,45 @@ model_response_no_f0_range = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_f0_range_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_f0_range_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
+## model_response_no_f0_range_interaction:     duration_f0_z_score * form + range_f0_z_score + sd_f0_z_score * 
+## model_response_no_f0_range_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
+## model_response_no_f0_range_interaction:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_f0_range_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
-## model_response_no_f0_range_interaction:     duration_f0_z_score * form + range_f0_z_score + sd_f0_z_score * 
-## model_response_no_f0_range_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
-## model_response_no_f0_range_interaction:     form + form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_range_interaction:     (1 | stimNum)
 ##                                        npar    AIC    BIC  logLik deviance
+## model_response_no_f0_range_interaction   18 4839.2 4954.9 -2401.6   4803.2
 ## model_response_full                      19 4841.0 4963.1 -2401.5   4803.0
-## model_response_no_f0_range_interaction   26 4678.6 4845.6 -2313.3   4626.6
-##                                        Chisq Df Pr(&gt;Chisq)    
-## model_response_full                                           
-## model_response_no_f0_range_interaction 176.4  7  &lt; 2.2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+##                                         Chisq Df Pr(&gt;Chisq)
+## model_response_no_f0_range_interaction                     
+## model_response_full                    0.2539  1     0.6143</code></pre>
 <pre class="r"><code>anova(model_response_no_f0_range_interaction, model_response_no_f0_range)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
 ## model_response_no_f0_range: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_range:     duration_f0_z_score * form + sd_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_f0_range:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_f0_range:     (1 | subject) + (1 | stimNum)
+## model_response_no_f0_range:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_f0_range:     speaker) + (1 | stimNum)
 ## model_response_no_f0_range_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_range_interaction:     duration_f0_z_score * form + range_f0_z_score + sd_f0_z_score * 
 ## model_response_no_f0_range_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
-## model_response_no_f0_range_interaction:     form + form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_range_interaction:     (1 | stimNum)
+## model_response_no_f0_range_interaction:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
 ##                                        npar    AIC    BIC  logLik deviance
-## model_response_no_f0_range               25 4676.6 4837.2 -2313.3   4626.6
-## model_response_no_f0_range_interaction   26 4678.6 4845.6 -2313.3   4626.6
+## model_response_no_f0_range               17 4838.9 4948.1 -2402.4   4804.9
+## model_response_no_f0_range_interaction   18 4839.2 4954.9 -2401.6   4803.2
 ##                                         Chisq Df Pr(&gt;Chisq)
 ## model_response_no_f0_range                                 
-## model_response_no_f0_range_interaction 0.0326  1     0.8567</code></pre>
+## model_response_no_f0_range_interaction 1.6507  1     0.1989</code></pre>
 </div>
 <div id="sd-f0" class="section level4">
 <h4>SD F0</h4>
@@ -915,9 +909,9 @@ model_response_no_f0_range = glmer(data = df_merged_audio,
                        sd_f0_z_score +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -928,49 +922,45 @@ model_response_no_f0_sd = glmer(data = df_merged_audio,
                        duration_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_f0_sd_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_f0_sd_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
+## model_response_no_f0_sd_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score + 
+## model_response_no_f0_sd_interaction:     mean_intensity_z_score * form + sd_intensity_z_score * form + 
+## model_response_no_f0_sd_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_f0_sd_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
-## model_response_no_f0_sd_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score + 
-## model_response_no_f0_sd_interaction:     mean_intensity_z_score * form + sd_intensity_z_score * form + 
-## model_response_no_f0_sd_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_sd_interaction:     (1 | stimNum)
 ##                                     npar    AIC    BIC  logLik deviance  Chisq
-## model_response_full                   19 4841.0 4963.1 -2401.5   4803.0       
-## model_response_no_f0_sd_interaction   26 4677.3 4844.3 -2312.6   4625.3 177.71
-##                                     Df Pr(&gt;Chisq)    
-## model_response_full                                  
-## model_response_no_f0_sd_interaction  7  &lt; 2.2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+## model_response_no_f0_sd_interaction   18 4839.1 4954.8 -2401.6   4803.1       
+## model_response_full                   19 4841.0 4963.1 -2401.5   4803.0 0.1222
+##                                     Df Pr(&gt;Chisq)
+## model_response_no_f0_sd_interaction              
+## model_response_full                  1     0.7267</code></pre>
 <pre class="r"><code>anova(model_response_no_f0_sd_interaction, model_response_no_f0_sd)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
 ## model_response_no_f0_sd: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_sd:     range_f0_z_score * form + duration_f0_z_score * form + mean_intensity_z_score * 
-## model_response_no_f0_sd:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_f0_sd:     (1 | subject) + (1 | stimNum)
+## model_response_no_f0_sd:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_f0_sd:     speaker) + (1 | stimNum)
 ## model_response_no_f0_sd_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_f0_sd_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score + 
 ## model_response_no_f0_sd_interaction:     mean_intensity_z_score * form + sd_intensity_z_score * form + 
-## model_response_no_f0_sd_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_f0_sd_interaction:     (1 | stimNum)
+## model_response_no_f0_sd_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ##                                     npar    AIC    BIC  logLik deviance  Chisq
-## model_response_no_f0_sd               25 4675.4 4836.0 -2312.7   4625.4       
-## model_response_no_f0_sd_interaction   26 4677.3 4844.3 -2312.6   4625.3 0.0843
+## model_response_no_f0_sd               17 4839.4 4948.6 -2402.7   4805.4       
+## model_response_no_f0_sd_interaction   18 4839.1 4954.8 -2401.6   4803.1 2.3122
 ##                                     Df Pr(&gt;Chisq)
 ## model_response_no_f0_sd                          
-## model_response_no_f0_sd_interaction  1     0.7715</code></pre>
+## model_response_no_f0_sd_interaction  1     0.1284</code></pre>
 </div>
 <div id="mean-intensity" class="section level4">
 <h4>Mean Intensity</h4>
@@ -982,9 +972,9 @@ model_response_no_f0_sd = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -995,29 +985,28 @@ model_response_no_mean_intensity = glmer(data = df_merged_audio,
                         sd_f0_z_score * form +
                        duration_f0_z_score * form +
                        sd_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_mean_intensity_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_mean_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
+## model_response_no_mean_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
+## model_response_no_mean_intensity_interaction:     form + mean_intensity_z_score + sd_intensity_z_score * form + 
+## model_response_no_mean_intensity_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_mean_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
-## model_response_no_mean_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
-## model_response_no_mean_intensity_interaction:     form + mean_intensity_z_score + sd_intensity_z_score * form + 
-## model_response_no_mean_intensity_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_mean_intensity_interaction:     (1 | stimNum)
 ##                                              npar    AIC    BIC  logLik
+## model_response_no_mean_intensity_interaction   18 4841.9 4957.6 -2403.0
 ## model_response_full                            19 4841.0 4963.1 -2401.5
-## model_response_no_mean_intensity_interaction   26 4681.7 4848.8 -2314.9
-##                                              deviance  Chisq Df Pr(&gt;Chisq)    
-## model_response_full                            4803.0                         
-## model_response_no_mean_intensity_interaction   4629.7 173.26  7  &lt; 2.2e-16 ***
+##                                              deviance Chisq Df Pr(&gt;Chisq)  
+## model_response_no_mean_intensity_interaction   4805.9                      
+## model_response_full                            4803.0 2.939  1    0.08647 .
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 <pre class="r"><code>anova(model_response_no_mean_intensity_interaction, model_response_no_mean_intensity)</code></pre>
@@ -1025,19 +1014,18 @@ model_response_no_mean_intensity = glmer(data = df_merged_audio,
 ## Models:
 ## model_response_no_mean_intensity: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_mean_intensity:     range_f0_z_score * form + sd_f0_z_score * form + duration_f0_z_score * 
-## model_response_no_mean_intensity:     form + sd_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_mean_intensity:     (1 | subject) + (1 | stimNum)
+## model_response_no_mean_intensity:     form + sd_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_mean_intensity:     speaker) + (1 | stimNum)
 ## model_response_no_mean_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_mean_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_no_mean_intensity_interaction:     form + mean_intensity_z_score + sd_intensity_z_score * form + 
-## model_response_no_mean_intensity_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_mean_intensity_interaction:     (1 | stimNum)
+## model_response_no_mean_intensity_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ##                                              npar    AIC    BIC  logLik
-## model_response_no_mean_intensity               25 4687.9 4848.6 -2319.0
-## model_response_no_mean_intensity_interaction   26 4681.7 4848.8 -2314.9
+## model_response_no_mean_intensity               17 4848.5 4957.7 -2407.2
+## model_response_no_mean_intensity_interaction   18 4841.9 4957.6 -2403.0
 ##                                              deviance  Chisq Df Pr(&gt;Chisq)   
-## model_response_no_mean_intensity               4637.9                        
-## model_response_no_mean_intensity_interaction   4629.7 8.1988  1   0.004192 **
+## model_response_no_mean_intensity               4814.5                        
+## model_response_no_mean_intensity_interaction   4805.9 8.5564  1   0.003443 **
 ## ---
 ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
 </div>
@@ -1051,9 +1039,9 @@ model_response_no_mean_intensity = glmer(data = df_merged_audio,
                        sd_f0_z_score * form +
                        mean_intensity_z_score * form +
                        sd_intensity_z_score +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())
 
@@ -1064,49 +1052,45 @@ model_response_no_sd_intensity = glmer(data = df_merged_audio,
                         sd_f0_z_score * form +
                        duration_f0_z_score * form +
                        mean_intensity_z_score * form +
-                        form * speaker +
-                        already_heard_by_speaker +
-                        (1 | subject) + (1 | stimNum),
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
                        control=glmerControl(optimizer=&quot;bobyqa&quot;),
                        family = binomial())</code></pre>
 <pre class="r"><code>anova(model_response_full, model_response_no_sd_intensity_interaction)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
+## model_response_no_sd_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
+## model_response_no_sd_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
+## model_response_no_sd_intensity_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score + 
+## model_response_no_sd_intensity_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ## model_response_full: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_full:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_full:     form + mean_intensity_z_score * form + sd_intensity_z_score * 
 ## model_response_full:     form + (1 | subject) + (1 | speaker) + (1 | stimNum)
-## model_response_no_sd_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
-## model_response_no_sd_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
-## model_response_no_sd_intensity_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score + 
-## model_response_no_sd_intensity_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_sd_intensity_interaction:     (1 | stimNum)
 ##                                            npar    AIC    BIC  logLik deviance
+## model_response_no_sd_intensity_interaction   18 4840.2 4955.8 -2402.1   4804.2
 ## model_response_full                          19 4841.0 4963.1 -2401.5   4803.0
-## model_response_no_sd_intensity_interaction   26 4678.3 4845.4 -2313.2   4626.3
-##                                             Chisq Df Pr(&gt;Chisq)    
-## model_response_full                                                
-## model_response_no_sd_intensity_interaction 176.64  7  &lt; 2.2e-16 ***
-## ---
-## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1</code></pre>
+##                                             Chisq Df Pr(&gt;Chisq)
+## model_response_no_sd_intensity_interaction                     
+## model_response_full                        1.2044  1     0.2725</code></pre>
 <pre class="r"><code>anova(model_response_no_sd_intensity_interaction, model_response_no_sd_intensity)</code></pre>
 <pre><code>## Data: df_merged_audio
 ## Models:
 ## model_response_no_sd_intensity: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_sd_intensity:     range_f0_z_score * form + sd_f0_z_score * form + duration_f0_z_score * 
-## model_response_no_sd_intensity:     form + mean_intensity_z_score * form + form * speaker + already_heard_by_speaker + 
-## model_response_no_sd_intensity:     (1 | subject) + (1 | stimNum)
+## model_response_no_sd_intensity:     form + mean_intensity_z_score * form + (1 | subject) + (1 | 
+## model_response_no_sd_intensity:     speaker) + (1 | stimNum)
 ## model_response_no_sd_intensity_interaction: response ~ slope_f0_z_score * form + mean_f0_z_score * form + 
 ## model_response_no_sd_intensity_interaction:     duration_f0_z_score * form + range_f0_z_score * form + sd_f0_z_score * 
 ## model_response_no_sd_intensity_interaction:     form + mean_intensity_z_score * form + sd_intensity_z_score + 
-## model_response_no_sd_intensity_interaction:     form * speaker + already_heard_by_speaker + (1 | subject) + 
-## model_response_no_sd_intensity_interaction:     (1 | stimNum)
+## model_response_no_sd_intensity_interaction:     (1 | subject) + (1 | speaker) + (1 | stimNum)
 ##                                            npar    AIC    BIC  logLik deviance
-## model_response_no_sd_intensity               25 4676.6 4837.3 -2313.3   4626.6
-## model_response_no_sd_intensity_interaction   26 4678.3 4845.4 -2313.2   4626.3
-##                                             Chisq Df Pr(&gt;Chisq)
-## model_response_no_sd_intensity                                 
-## model_response_no_sd_intensity_interaction 0.2967  1      0.586</code></pre>
+## model_response_no_sd_intensity               17 4840.7 4949.9 -2403.3   4806.7
+## model_response_no_sd_intensity_interaction   18 4840.2 4955.8 -2402.1   4804.2
+##                                            Chisq Df Pr(&gt;Chisq)
+## model_response_no_sd_intensity                                
+## model_response_no_sd_intensity_interaction 2.483  1     0.1151</code></pre>
 </div>
 </div>
 <div id="multiple-comparisons-correction" class="section level3">
@@ -1127,9 +1111,9 @@ p13 = anova(model_response_full, model_response_no_sd_intensity_interaction)$`Pr
 p14 = anova(model_response_no_sd_intensity_interaction, model_response_no_sd_intensity)$`Pr(&gt;Chisq)`[2]
 
 p.adjust(c(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14), method=&quot;holm&quot;)</code></pre>
-<pre><code>##  [1] 2.271991e-27 1.664997e-06 3.810086e-31 1.000000e+00 5.765309e-05
-##  [6] 5.558360e-02 1.342285e-33 1.000000e+00 8.315163e-34 1.000000e+00
-## [11] 5.676777e-33 2.515027e-02 1.295736e-33 1.000000e+00</code></pre>
+<pre><code>##  [1] 6.047202e-10 7.023472e-04 7.817918e-03 1.000000e+00 5.956807e-32
+##  [6] 3.825980e-01 1.000000e+00 9.943187e-01 1.000000e+00 8.055641e-01
+## [11] 6.917330e-01 3.443084e-02 1.000000e+00 8.055641e-01</code></pre>
 </div>
 </div>
 </div>
