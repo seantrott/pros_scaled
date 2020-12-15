@@ -1,0 +1,18 @@
+---
+title: "Prosodic Cues for Indirect Requests"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, dpi=300)
+```
+
+People often speak indirectly. 
+
+[Link to report](seantrott.github.io/pros_scaled)
