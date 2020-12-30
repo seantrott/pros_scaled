@@ -1,0 +1,600 @@
+---
+title: "Analysis of acoustic features: scaled up study"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(forcats)
+library(lme4)
+library(broom)
+```
+
+# Load data
+
+```{r}
+# setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/audio")
+df_audio = read_csv("../../../data/processed/audio/audio_features_scaled_stimuli.csv")
+
+df_audio$label = factor(df_audio$label)
+df_audio$form = factor(df_audio$form)
+
+nrow(df_audio)
+table(df_audio$speaker, df_audio$label)
+
+length(unique(df_audio$ppt_id))
+
+```
+
+## Remove subjects with less than 24 observations
+
+
+We also exclude participant 16, who was recorded with a lower-quality laptop microphone. (Note that the exclusion does not really affect the primary outcomes reported.)
+
+```{r}
+n_obs = df_audio %>%
+  group_by(ppt_id) %>%
+  summarise(count = n())
+
+hist(n_obs$count)
+
+complete = n_obs %>%
+  filter(count == 24)
+
+## print ppt ids with < 24 observations
+n_obs %>%
+  filter(count < 24)
+
+## Select only ppts with 24 observations
+df_audio_filtered = df_audio %>%
+ filter(ppt_id %in% complete$ppt_id)
+nrow(df_audio_filtered)
+
+## How many remaining?
+length(unique(df_audio_filtered$ppt_id))
+
+## Also remove #16, 
+df_audio_filtered = df_audio_filtered %>%
+ filter(ppt_id != 16)
+length(unique(df_audio_filtered$ppt_id))
+unique(df_audio_filtered$ppt_id)
+nrow(df_audio_filtered)
+
+```
+
+
+## Descriptive statistics
+
+```{r}
+by_intent = df_audio_filtered %>%
+  group_by(label) %>%
+  summarise(mean_f0 = mean(mean_f0),
+            range_f0 = mean(range_f0),
+            sd_f0 = mean(sd_f0),
+            duration_f0 = mean(duration_f0),
+            slope_f0 = mean(slope_f0),
+            mean_intensity = mean(mean_intensity),
+            sd_intensity = mean(sd_intensity))
+
+by_intent
+```
+
+## Normalize variables by speaker
+
+Now we z-score our variables, by speaker. E.g., for each speaker, we normalize each observation by z-scoring it *to that speaker*.
+
+```{r}
+df_audio_filtered = df_audio_filtered %>% 
+  group_by(speaker) %>% 
+  mutate(mean_f0_z_score = scale(mean_f0),
+         duration_f0_z_score = scale(duration_f0),
+         range_f0_z_score = scale(range_f0),
+         sd_f0_z_score = scale(sd_f0),
+         slope_f0_z_score = scale(slope_f0),
+         mean_intensity_z_score = scale(mean_intensity),
+         sd_intensity_z_score = scale(sd_intensity)
+         )
+
+```
+
+
+
+# Machine learning classifier
+
+## Do acoustic features help us classify intent overall?
+
+For a first-pass, we recode "statements" and "questions" as non-requests.
+
+```{r}
+df_audio_filtered$label_recoded = fct_recode(df_audio_filtered$label,
+                                    "non-request" = "statement",
+                                    "non-request" = "question")
+```
+
+
+
+### Logistic regression
+
+```{r}
+set.seed(123)
+
+df_audio_filtered$index = c(1: nrow(df_audio_filtered))
+prob_outputs = c()
+for (iterating_index in c(1:nrow(df_audio_filtered))) {
+  
+  train = df_audio_filtered %>%
+    filter(index != iterating_index)
+  
+  test = df_audio_filtered %>%
+    filter(index == iterating_index)
+  
+  model_core = glm(data = train,
+                  label_recoded ~ 
+                    mean_f0_z_score * form + 
+                    range_f0_z_score * form + 
+                    sd_f0_z_score * form + 
+                    duration_f0_z_score * form +
+                    slope_f0_z_score * form + 
+                    mean_intensity_z_score * form +
+                    sd_intensity_z_score * form,
+                   family = binomial())
+
+  probabilities = predict(model_core, test, type="response")
+
+  prob_outputs[iterating_index] = probabilities
+}
+
+
+df_audio_filtered$lr_probs = prob_outputs
+
+df_audio_filtered %>%
+  ggplot(aes(x = lr_probs,
+             fill = label_recoded)) + 
+  geom_density(alpha = .6) +
+  labs(x = "P(Request)",
+       title = "Logistic regression predictions by true label") +
+  theme_minimal()
+
+
+df_audio_filtered$lr_prediction = ifelse(df_audio_filtered$lr_probs > 0.5,
+                             "request","non-request")
+
+df_audio_filtered$lr_correct = df_audio_filtered$lr_prediction == df_audio_filtered$label_recoded
+mean(df_audio_filtered$lr_correct)
+```
+
+We see that a logistic regression classifier equipped with all seven features gives us `r scales::percent(mean(df_audio_filtered$lr_correct))` accuracy on held-out test items.
+
+
+# Which cues are particularly predictive?
+
+Now, we use nested model comparisons to determine *which cues* are particularly predictive of intent.
+
+## All items
+
+
+```{r}
+  
+model_all = glm(data = df_audio_filtered,
+                  label_recoded ~ 
+                  mean_f0_z_score + range_f0_z_score + sd_f0_z_score + duration_f0_z_score +
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_f0 = glm(data = df_audio_filtered,
+                  label_recoded ~ range_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_range_f0 = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_f0 = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_duration_f0 = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_slope_f0 = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_intensity = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_intensity = glm(data = df_audio_filtered,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + mean_intensity_z_score,
+                   family = binomial())
+
+
+summary(model_all)
+
+df_broom = broom::tidy(model_all)
+
+df_broom %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = reorder(term, estimate),
+             y = estimate)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(ymin = estimate - 2*std.error, 
+                    ymax = estimate + 2*std.error), 
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x = "Coefficient estimate",
+       y = "Predictor") +
+  theme_minimal()
+
+
+```
+
+
+### Model comparisons
+
+```{r}
+mean_f0 = anova(model_no_mean_f0, model_all)
+mean_f0
+p_mean_f0 = pchisq(mean_f0$Deviance[2], mean_f0$Df[2], lower.tail = FALSE)
+p_mean_f0
+
+range_f0 = anova(model_no_range_f0, model_all)
+range_f0
+p_range = pchisq(range_f0$Deviance[2], range_f0$Df[2], lower.tail = FALSE)
+p_range
+
+sd_f0 = anova(model_no_sd_f0, model_all)
+sd_f0
+p_sd_f0 = pchisq(sd_f0$Deviance[2], sd_f0$Df[2], lower.tail = FALSE)
+
+duration_f0 = anova(model_no_duration_f0, model_all)
+duration_f0
+p_duration_f0 = pchisq(duration_f0$Deviance[2], duration_f0$Df[2], lower.tail = FALSE)
+p_duration_f0
+
+slope_f0 = anova(model_no_slope_f0, model_all)
+slope_f0
+p_slope_f0 = pchisq(slope_f0$Deviance[2], slope_f0$Df[2], lower.tail = FALSE)
+p_slope_f0
+
+mean_intensity = anova(model_no_mean_intensity, model_all)
+mean_intensity
+p_mean_intensity = pchisq(mean_intensity$Deviance[2], mean_intensity$Df[2], lower.tail = FALSE)
+p_mean_intensity
+
+sd_intensity = anova(model_no_sd_intensity, model_all)
+sd_intensity
+p_sd_intensity = pchisq(sd_intensity$Deviance[2], sd_intensity$Df[2], lower.tail = FALSE)
+p_sd_intensity
+
+```
+
+Now we correct for multiple comparisons:
+
+```{r}
+p.adjust(c(p_mean_f0, p_range, p_sd_f0, p_duration_f0, p_slope_f0, 
+           p_mean_intensity, p_sd_intensity), method="holm")
+
+```
+
+After correcting for multiple comparisons, only `F0 slope` passes the significance threshold. 
+
+
+## Conventional items
+
+
+```{r}
+df_conventional = df_audio_filtered %>%
+  filter(form == "conventional")
+
+nrow(df_conventional)
+  
+model_all = glm(data = df_conventional,
+                  label_recoded ~ 
+                  mean_f0_z_score + range_f0_z_score + sd_f0_z_score + duration_f0_z_score +
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_f0 = glm(data = df_conventional,
+                  label_recoded ~ range_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_range_f0 = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_f0 = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_duration_f0 = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_slope_f0 = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_intensity = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_intensity = glm(data = df_conventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + mean_intensity_z_score,
+                   family = binomial())
+
+
+summary(model_all)
+
+
+df_broom = broom::tidy(model_all)
+
+df_broom %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = reorder(term, estimate),
+             y = estimate)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(ymin = estimate - 2*std.error, 
+                    ymax = estimate + 2*std.error), 
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x = "Coefficient estimate",
+       y = "Predictor") +
+  theme_minimal()
+
+
+```
+
+
+### Model comparisons
+
+```{r}
+mean_f0 = anova(model_no_mean_f0, model_all)
+mean_f0
+p_mean_f0 = pchisq(mean_f0$Deviance[2], mean_f0$Df[2], lower.tail = FALSE)
+p_mean_f0
+
+range_f0 = anova(model_no_range_f0, model_all)
+range_f0
+p_range = pchisq(range_f0$Deviance[2], range_f0$Df[2], lower.tail = FALSE)
+p_range
+
+sd_f0 = anova(model_no_sd_f0, model_all)
+sd_f0
+p_sd_f0 = pchisq(sd_f0$Deviance[2], sd_f0$Df[2], lower.tail = FALSE)
+
+duration_f0 = anova(model_no_duration_f0, model_all)
+duration_f0
+p_duration_f0 = pchisq(duration_f0$Deviance[2], duration_f0$Df[2], lower.tail = FALSE)
+p_duration_f0
+
+slope_f0 = anova(model_no_slope_f0, model_all)
+slope_f0
+p_slope_f0 = pchisq(slope_f0$Deviance[2], slope_f0$Df[2], lower.tail = FALSE)
+p_slope_f0
+
+mean_intensity = anova(model_no_mean_intensity, model_all)
+mean_intensity
+p_mean_intensity = pchisq(mean_intensity$Deviance[2], mean_intensity$Df[2], lower.tail = FALSE)
+p_mean_intensity
+
+sd_intensity = anova(model_no_sd_intensity, model_all)
+sd_intensity
+p_sd_intensity = pchisq(sd_intensity$Deviance[2], sd_intensity$Df[2], lower.tail = FALSE)
+p_sd_intensity
+
+```
+
+Now we correct for multiple comparisons:
+
+```{r}
+p.adjust(c(p_mean_f0, p_range, p_sd_f0, p_duration_f0, p_slope_f0, 
+           p_mean_intensity, p_sd_intensity), method="holm")
+
+```
+
+After correcting for multiple comparisons, only `F0 duration` and `mean intensity` pass the significance threshold. `F0 slope`, which was found to be predictive in previous analyses, is no longer significant after correcting for multiple comparisons (before correcting it is marginally significant: `r p_slope_f0`).
+
+
+## Non-conventional items
+
+
+```{r}
+df_nonconventional = df_audio_filtered %>%
+  filter(form == "non-conventional")
+
+nrow(df_nonconventional)
+  
+model_all = glm(data = df_nonconventional,
+                  label_recoded ~ 
+                  mean_f0_z_score + range_f0_z_score + sd_f0_z_score + duration_f0_z_score +
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_f0 = glm(data = df_nonconventional,
+                  label_recoded ~ range_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_range_f0 = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + sd_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_f0 = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + duration_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_duration_f0 = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    slope_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_slope_f0 = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + mean_intensity_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_mean_intensity = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + sd_intensity_z_score,
+                   family = binomial())
+
+model_no_sd_intensity = glm(data = df_nonconventional,
+                  label_recoded ~ mean_f0_z_score + range_f0_z_score + sd_f0_z_score + 
+                    duration_f0_z_score + slope_f0_z_score + mean_intensity_z_score,
+                   family = binomial())
+
+
+summary(model_all)
+
+df_broom = broom::tidy(model_all)
+
+df_broom %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = reorder(term, estimate),
+             y = estimate)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(ymin = estimate - 2*std.error, 
+                    ymax = estimate + 2*std.error), 
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x = "Coefficient estimate",
+       y = "Predictor") +
+  theme_minimal()
+
+
+```
+
+
+### Model comparisons
+
+```{r}
+mean_f0 = anova(model_no_mean_f0, model_all)
+mean_f0
+p_mean_f0 = pchisq(mean_f0$Deviance[2], mean_f0$Df[2], lower.tail = FALSE)
+p_mean_f0
+
+range_f0 = anova(model_no_range_f0, model_all)
+range_f0
+p_range = pchisq(range_f0$Deviance[2], range_f0$Df[2], lower.tail = FALSE)
+p_range
+
+sd_f0 = anova(model_no_sd_f0, model_all)
+sd_f0
+p_sd_f0 = pchisq(sd_f0$Deviance[2], sd_f0$Df[2], lower.tail = FALSE)
+
+duration_f0 = anova(model_no_duration_f0, model_all)
+duration_f0
+p_duration_f0 = pchisq(duration_f0$Deviance[2], duration_f0$Df[2], lower.tail = FALSE)
+p_duration_f0
+
+slope_f0 = anova(model_no_slope_f0, model_all)
+slope_f0
+p_slope_f0 = pchisq(slope_f0$Deviance[2], slope_f0$Df[2], lower.tail = FALSE)
+p_slope_f0
+
+mean_intensity = anova(model_no_mean_intensity, model_all)
+mean_intensity
+p_mean_intensity = pchisq(mean_intensity$Deviance[2], mean_intensity$Df[2], lower.tail = FALSE)
+p_mean_intensity
+
+sd_intensity = anova(model_no_sd_intensity, model_all)
+sd_intensity
+p_sd_intensity = pchisq(sd_intensity$Deviance[2], sd_intensity$Df[2], lower.tail = FALSE)
+p_sd_intensity
+
+```
+
+Now we correct for multiple comparisons:
+
+```{r}
+p.adjust(c(p_mean_f0, p_range, p_sd_f0, p_duration_f0, p_slope_f0, 
+           p_mean_intensity, p_sd_intensity), method="holm")
+
+```
+
+
+After correcting for multiple comparisons, we see that `F0 mean` and `F0 duration` are significantly predictive of intent.
+
+### Visualizations 
+
+The features that were most predictive in the analyses above were:
+
+- **#voiced frames** (for both)  
+- **mean intensity** (for conventional items)
+- **mean F0** (for non-conventional items)
+- **F0 slope** (marginally predictive for conventional items).
+
+Let's visualize them below:
+
+```{r}
+df_audio_filtered %>% 
+  ggplot(aes(x = form,
+             y = duration_f0_z_score,
+             fill = label_recoded)) +
+  geom_boxplot() +
+  labs(x = "Form",
+       y = "#Voiced frames (z-scored)",
+       title = "#Voiced frames by Speaker Intent") +
+  theme_minimal()
+
+df_audio_filtered %>% 
+  ggplot(aes(x = form,
+             y = mean_f0_z_score,
+             fill = label_recoded)) +
+  geom_boxplot() +
+  labs(x = "Form",
+       y = "Mean F0 (z-scored)",
+       title = "Mean F0 by Speaker Intent") +
+  theme_minimal()
+
+df_audio_filtered %>% 
+  ggplot(aes(x = form,
+             y = mean_intensity_z_score,
+             fill = label_recoded)) +
+  geom_boxplot() +
+  labs(x = "Form",
+       y = "Mean intensity (z-scored)",
+       title = "Mean intensity by Speaker Intent") +
+  theme_minimal()
+
+
+df_audio_filtered %>% 
+  ggplot(aes(x = form,
+             y = slope_f0_z_score,
+             fill = label_recoded)) +
+  geom_boxplot() +
+  labs(x = "Form",
+       y = "F0 slope",
+       title = "F0 slope by Speaker Intent") +
+  theme_minimal()
+
+```
+

@@ -1,0 +1,85 @@
+---
+title: "Prosody: Experiment 3"
+output: 
+  html_document:
+    toc: true
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(forcats)
+library(lme4)
+```
+
+# Reading in data
+
+```{r}
+# setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/norming/")
+coded = read.csv("../../../data/processed/norming/norming_data.csv")
+nrow(coded)
+```
+
+
+## Descriptive
+
+```{r}
+coded %>%
+  group_by(form) %>%
+  summarise(mean_request = mean(numeric_response),
+            sd_request = sd(numeric_response))
+
+coded_critical = coded %>%
+  filter(form %in% c("conventional", "nonconventional"))
+
+coded_critical %>%
+  group_by(form) %>%
+  summarise(mean_request = mean(numeric_response),
+            sd_request = sd(numeric_response))
+```
+
+
+### By-item (all)
+
+```{r}
+df_grouped = coded %>%
+  group_by(form, topic) %>%
+  summarise(mean_request = mean(numeric_response),
+            sd_request = sd(numeric_response))
+
+df_grouped
+
+df_critical = coded_critical %>%
+  filter(form %in% c('nonconventional', 'conventional')) %>%
+  group_by(form, topic) %>%
+  summarise(mean_request = mean(numeric_response),
+            sd_request = sd(numeric_response))
+
+write.csv(df_grouped, "item_means.csv")
+```
+
+
+## Analysis
+
+
+```{r}
+
+
+model_full = glmer(data = coded_critical,
+                   response ~ form +
+                     (1 + form | subject) +
+                     (1 | stimNum),
+                   control=glmerControl(optimizer="bobyqa"),
+                   family = binomial())
+
+model_reduced = glmer(data = coded_critical,
+                   response ~  (1 + form | subject) +
+                     (1 | stimNum),
+                   control=glmerControl(optimizer="bobyqa"),
+                   family = binomial())
+
+anova(model_full, model_reduced)
+
+summary(model_full)
+```
+
