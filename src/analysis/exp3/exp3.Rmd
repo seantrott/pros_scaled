@@ -21,7 +21,7 @@ library(broom.mixed)
 
 ```{r}
 # setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/exp3/")
-df_processed = read_csv("../../../data/processed/exp3/pros_scaled_pilot_processed.csv")
+df_processed = read_csv("../../../data/processed/exp3/pros_scaled_processed.csv")
 nrow(df_processed)
 length(unique(df_processed$subject))
 
@@ -440,84 +440,6 @@ anova(model_response_no_f0_dur_interaction, model_response_no_f0_dur)
 ```
 
 
-
-#### F0 range
-
-```{r}
-model_response_no_f0_range_interaction = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                       duration_f0_z_score * form +
-                       range_f0_z_score +
-                       sd_f0_z_score * form +
-                       mean_intensity_z_score * form +
-                       sd_intensity_z_score * form +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-
-model_response_no_f0_range = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                       duration_f0_z_score * form +
-                       sd_f0_z_score * form +
-                       mean_intensity_z_score * form +
-                       sd_intensity_z_score * form +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-```
-
-
-```{r}
-anova(model_response_full, model_response_no_f0_range_interaction)
-anova(model_response_no_f0_range_interaction, model_response_no_f0_range)
-
-```
-
-
-#### SD F0
-
-```{r}
-model_response_no_f0_sd_interaction = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                       duration_f0_z_score * form +
-                       range_f0_z_score * form+
-                       sd_f0_z_score +
-                       mean_intensity_z_score * form +
-                       sd_intensity_z_score * form +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-
-model_response_no_f0_sd = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                        range_f0_z_score * form+
-                       duration_f0_z_score * form +
-                       mean_intensity_z_score * form +
-                       sd_intensity_z_score * form +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-```
-
-
-```{r}
-anova(model_response_full, model_response_no_f0_sd_interaction)
-anova(model_response_no_f0_sd_interaction, model_response_no_f0_sd)
-
-```
-
 #### Mean Intensity
 
 ```{r}
@@ -556,44 +478,7 @@ anova(model_response_no_mean_intensity_interaction, model_response_no_mean_inten
 
 ```
 
-#### SD Intensity
-
-```{r}
-model_response_no_sd_intensity_interaction = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                       duration_f0_z_score * form +
-                       range_f0_z_score * form+
-                       sd_f0_z_score * form +
-                       mean_intensity_z_score * form +
-                       sd_intensity_z_score +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-
-model_response_no_sd_intensity = glmer(data = df_merged_audio,
-                      Interpretation ~ slope_f0_z_score * form +
-                        mean_f0_z_score * form +
-                        range_f0_z_score * form+
-                        sd_f0_z_score * form +
-                       duration_f0_z_score * form +
-                       mean_intensity_z_score * form +
-                        (1 | subject) + 
-                        (1 | speaker) +
-                        (1 | stimNum),
-                       control=glmerControl(optimizer="bobyqa"),
-                       family = binomial())
-```
-
-
-```{r}
-anova(model_response_full, model_response_no_sd_intensity_interaction)
-anova(model_response_no_sd_intensity_interaction, model_response_no_sd_intensity)
-```
-
-### Multiple comparisons correction
+### Multiple comparisons corrections
 
 ```{r}
 p1 = anova(model_response_full, model_response_no_slope_interaction)$`Pr(>Chisq)`[2]
@@ -602,16 +487,10 @@ p3 = anova(model_response_full, model_response_no_mean_f0_interaction)$`Pr(>Chis
 p4 = anova(model_response_no_mean_f0_interaction, model_response_no_mean_f0)$`Pr(>Chisq)`[2]
 p5 = anova(model_response_full, model_response_no_f0_dur_interaction)$`Pr(>Chisq)`[2]
 p6 = anova(model_response_no_f0_dur_interaction, model_response_no_f0_dur)$`Pr(>Chisq)`[2]
-p7 = anova(model_response_full, model_response_no_f0_range_interaction)$`Pr(>Chisq)`[2]
-p8 = anova(model_response_no_f0_range_interaction, model_response_no_f0_range)$`Pr(>Chisq)`[2]
-p9 = anova(model_response_full, model_response_no_f0_sd_interaction)$`Pr(>Chisq)`[2]
-p10 = anova(model_response_no_f0_sd_interaction, model_response_no_f0_sd)$`Pr(>Chisq)`[2]
-p11 = anova(model_response_full, model_response_no_mean_intensity_interaction)$`Pr(>Chisq)`[2]
-p12 = anova(model_response_no_mean_intensity_interaction, model_response_no_mean_intensity)$`Pr(>Chisq)`[2]
-p13 = anova(model_response_full, model_response_no_sd_intensity_interaction)$`Pr(>Chisq)`[2]
-p14 = anova(model_response_no_sd_intensity_interaction, model_response_no_sd_intensity)$`Pr(>Chisq)`[2]
+p7 = anova(model_response_full, model_response_no_mean_intensity_interaction)$`Pr(>Chisq)`[2]
+p8 = anova(model_response_no_mean_intensity_interaction, model_response_no_mean_intensity)$`Pr(>Chisq)`[2]
 
-p.adjust(c(p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14), method="holm")
+p.adjust(c(p1, p2, p3, p4, p5, p6, p7, p8), method="holm")
 
 ```
 
