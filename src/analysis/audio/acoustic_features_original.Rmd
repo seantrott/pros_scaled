@@ -1,0 +1,437 @@
+---
+title: 'Analysis of Acoustic Features: Original Stimuli'
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(forcats)
+library(lme4)
+```
+
+
+
+# Load data
+
+## Audio features
+
+Here, we load the acoustic features dataset and try to predict subject's responses from acoustic features. 
+
+```{r}
+# setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/audio")
+df_audio = read_csv("../../../data/processed/audio/audio_features_original_stimuli.csv")
+
+
+df_audio$label = fct_recode(df_audio$label,
+                            "Request" = "ir",
+                            "Non-Request" = "literal")
+
+df_audio$label = factor(df_audio$label, levels = c("Non-Request", "Request"))
+
+## Z-score
+df_audio = df_audio %>% 
+  group_by(speaker) %>% 
+  mutate(mean_f0_z_score = scale(mean_f0),
+         duration_f0_z_score = scale(duration_f0),
+         range_f0_z_score = scale(range_f0),
+         sd_f0_z_score = scale(sd_f0),
+         slope_f0_z_score = scale(slope_f0),
+         mean_intensity_z_score = scale(mean_intensity),
+         sd_intensity_z_score = scale(sd_intensity)
+         )
+
+
+```
+
+
+# Analysis of acoustic features
+
+## All forms
+
+```{r}
+model_all_features_all = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_slope = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_mean_f0 = glmer(data = df_audio,
+                label ~ slope_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_range = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_sd_f0 = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  slope_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_duration = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_mean_intensity = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_sd_intensity = glmer(data = df_audio,
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  slope_f0_z_score +
+                  (1 | topic),
+                 family = binomial())
+```
+
+### Correct
+
+```{r}
+summary(model_all_features_all)
+
+anova(model_all_features_all, model_reduced_no_slope)
+anova(model_all_features_all, model_reduced_no_mean_f0)
+anova(model_all_features_all, model_reduced_no_range)
+anova(model_all_features_all, model_reduced_no_sd_f0)
+anova(model_all_features_all, model_reduced_no_duration)
+anova(model_all_features_all, model_reduced_no_mean_intensity)
+anova(model_all_features_all, model_reduced_no_sd_intensity)
+
+p1 = anova(model_all_features_all, model_reduced_no_slope)$`Pr(>Chisq)`[2]
+p2 = anova(model_all_features_all, model_reduced_no_mean_f0)$`Pr(>Chisq)`[2]
+p3 = anova(model_all_features_all, model_reduced_no_range)$`Pr(>Chisq)`[2]
+p4 = anova(model_all_features_all, model_reduced_no_sd_f0)$`Pr(>Chisq)`[2]
+p5 = anova(model_all_features_all, model_reduced_no_duration)$`Pr(>Chisq)`[2]
+p6 = anova(model_all_features_all, model_reduced_no_mean_intensity)$`Pr(>Chisq)`[2]
+p7 = anova(model_all_features_all, model_reduced_no_sd_intensity)$`Pr(>Chisq)`[2]
+
+p.adjust(c(p1, p2, p3, p4, p5, p6, p7), method="holm")
+```
+
+
+## Conventionals
+
+```{r}
+
+model_all_features = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_slope = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_mean_f0 = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ slope_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_range = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_sd_f0 = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  slope_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_duration = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_mean_intensity = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_sd_intensity = glmer(data = filter(df_audio, form == "conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  slope_f0_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+```
+
+### Correct
+
+```{r}
+summary(model_all_features)
+
+anova(model_all_features, model_reduced_no_slope)
+anova(model_all_features, model_reduced_no_mean_f0)
+anova(model_all_features, model_reduced_no_range)
+anova(model_all_features, model_reduced_no_sd_f0)
+anova(model_all_features, model_reduced_no_duration)
+anova(model_all_features, model_reduced_no_mean_intensity)
+anova(model_all_features, model_reduced_no_sd_intensity)
+
+p1 = anova(model_all_features, model_reduced_no_slope)$`Pr(>Chisq)`[2]
+p2 = anova(model_all_features, model_reduced_no_mean_f0)$`Pr(>Chisq)`[2]
+p3 = anova(model_all_features, model_reduced_no_range)$`Pr(>Chisq)`[2]
+p4 = anova(model_all_features, model_reduced_no_sd_f0)$`Pr(>Chisq)`[2]
+p5 = anova(model_all_features, model_reduced_no_duration)$`Pr(>Chisq)`[2]
+p6 = anova(model_all_features, model_reduced_no_mean_intensity)$`Pr(>Chisq)`[2]
+p7 = anova(model_all_features, model_reduced_no_sd_intensity)$`Pr(>Chisq)`[2]
+
+p.adjust(c(p1, p2, p3, p4, p5, p6, p7), method="holm")
+```
+
+
+## Non-conventional
+
+```{r}
+
+model_all_features_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_slope_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_mean_f0_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ slope_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_range_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+
+model_reduced_no_sd_f0_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  slope_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_duration_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  slope_f0_z_score + 
+                  mean_intensity_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_mean_intensity_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  slope_f0_z_score + 
+                  sd_intensity_z_score +
+                  (1 | topic),
+                 family = binomial())
+
+model_reduced_no_sd_intensity_non = glmer(data = filter(df_audio, form == "non-conventional"),
+                label ~ mean_f0_z_score + 
+                  range_f0_z_score + 
+                  sd_f0_z_score + 
+                  duration_f0_z_score + 
+                  mean_intensity_z_score + 
+                  slope_f0_z_score +
+                  (1 | topic),
+                 family = binomial())
+```
+
+
+## Correct for multiple comparisons
+
+```{r}
+summary(model_all_features_non)
+
+p1 = anova(model_all_features_non, model_reduced_no_slope_non)$`Pr(>Chisq)`[2]
+p2 = anova(model_all_features_non, model_reduced_no_mean_f0_non)$`Pr(>Chisq)`[2]
+p3 = anova(model_all_features_non, model_reduced_no_range_non)$`Pr(>Chisq)`[2]
+p4 = anova(model_all_features_non, model_reduced_no_sd_f0_non)$`Pr(>Chisq)`[2]
+p5 = anova(model_all_features_non, model_reduced_no_duration_non)$`Pr(>Chisq)`[2]
+p6 = anova(model_all_features_non, model_reduced_no_mean_intensity_non)$`Pr(>Chisq)`[2]
+p7 = anova(model_all_features_non, model_reduced_no_sd_intensity_non)$`Pr(>Chisq)`[2]
+
+p.adjust(c(p1, p2, p3, p4, p5, p6, p7), method="holm")
+```
+
+
+# Train classifier(s)
+
+Here, we test the ability of a classifier (logistic regression) to learn which features best predict **intent**. We validate its accuracy using leave-one-out cross validation (LOOCV); that is, for each item *Y*, we train the classifier on every *other* item, then try to predict *Y*. We then average the accuracy across all predicted items.
+
+
+```{r}
+df_audio$index = c(1: nrow(df_audio))
+prob_outputs = c()
+for (iterating_index in c(1:nrow(df_audio))) {
+  
+  train = df_audio %>%
+    filter(index != iterating_index)
+  
+  test = df_audio %>%
+    filter(index == iterating_index)
+  
+  model_core = glm(data = train,
+                  label ~ mean_f0_z_score*form + range_f0_z_score*form + 
+                    sd_f0_z_score*form + duration_f0_z_score*form + 
+                    slope_f0_z_score*form + mean_intensity_z_score*form + 
+                    sd_intensity_z_score*form,
+                   family = binomial())
+  
+  probabilities = predict(model_core, test, type="response")
+
+  prob_outputs[iterating_index] = probabilities
+}
+
+df_audio$lr_probs = prob_outputs
+
+df_audio$lr_prediction = ifelse(df_audio$lr_probs > 0.5,
+                             "Request","Non-Request")
+
+df_audio %>%
+  mutate(Intent = label) %>%
+  ggplot(aes(x = lr_probs,
+             fill = Intent)) +
+  geom_density(alpha = .6) +
+  labs(x = "P(request)") +
+  theme_minimal()
+
+df_audio$lr_correct = df_audio$lr_prediction == df_audio$label
+mean(df_audio$lr_correct)
+```
+
+
+
