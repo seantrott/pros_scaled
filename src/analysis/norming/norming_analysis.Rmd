@@ -1,5 +1,5 @@
 ---
-title: "Prosody: Experiment 3"
+title: "Prosody: Norming Study"
 output: 
   html_document:
     toc: true
@@ -39,7 +39,7 @@ coded_critical %>%
 ```
 
 
-### By-item (all)
+### By-item
 
 ```{r}
 df_grouped = coded %>%
@@ -58,12 +58,56 @@ df_critical = coded_critical %>%
 write.csv(df_grouped, "item_means.csv")
 ```
 
+We can also visualize these by-item means:
+
+```{r}
+coded_critical %>%
+  ggplot(aes(x = reorder(topic, numeric_response),
+             y = numeric_response,
+             color = form,
+             shape = form)) +
+  geom_point(stat="summary", fun="mean") +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 1*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 1*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  theme_minimal() +
+  ggtitle("Request interpretations by form and item") +
+  xlab("Item") +
+  geom_hline(yintercept = .5, linetype = "dotted") +
+  coord_flip() +
+  ylab("Proportion choosing 'request'") +
+  scale_y_continuous(limits = c(0, 1))
+
+ggsave("../../../Figures/priors_by_item.png", 
+         units="in", width=6, height=4, dpi=300)
+
+
+coded %>%
+  ggplot(aes(x = reorder(form, numeric_response),
+             y = numeric_response)) +
+  geom_point(stat="summary", fun="mean") +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 1*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 1*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  labs(x = "Form",
+       y = "Proportion of request interpretations",
+       title = "Request interpretations by form") +
+  theme_minimal()
+
+
+ggsave("../../../Figures/sup_priors_all_forms.png", 
+         units="in", width=5, height=4, dpi=300)
+```
+
 
 ## Analysis
 
 
 ```{r}
-
 
 model_full = glmer(data = coded_critical,
                    response ~ form +
