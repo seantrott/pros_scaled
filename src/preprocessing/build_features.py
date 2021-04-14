@@ -108,7 +108,7 @@ def main(dataset):
 	all_files = [os.path.join(root, name)
 	             for root, dirs, files in os.walk(recording_path)
 	             for name in files]
-	critical_files = [f for f in all_files if "_all" not in f and "DS" not in f and ".wav" in f]
+	critical_files = [f for f in all_files if "_all" not in f and "DS" not in f and (".wav" in f or ".mp3" in f)]
 
 	information = []
 	for filepath in tqdm(critical_files):
