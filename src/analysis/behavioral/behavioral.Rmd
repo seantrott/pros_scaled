@@ -1,0 +1,672 @@
+---
+title: "Prosody: Scaled experiment"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+  pdf_document: default
+  word_document:
+    toc: yes
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(forcats)
+library(lme4)
+library(broom.mixed)
+```
+
+# Reading in data
+
+```{r}
+# setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/behavioral/")
+df_processed = read_csv("../../../data/processed/behavioral/pros_scaled_processed.csv")
+nrow(df_processed)
+length(unique(df_processed$subject))
+
+# Filter to just critical stims 
+df_critical = df_processed %>%
+  # Critical trials
+  filter(condition %in% c("statement", "request", "question")) %>%
+  # The second of each nested trial (i.e., where participant has a response)
+  filter(!is.na(response))
+
+
+```
+
+
+
+## Checking over data
+
+```{r}
+table(df_critical$speaker)
+length(unique(df_critical$subject))
+```
+
+## Exclusion
+
+We exclude participants who identify as non-native speakers:
+
+```{r}
+df_critical = df_critical %>%
+  filter(Native_Speaker != "No") ## Corrected
+nrow(df_critical)
+length(unique(df_critical$subject))
+```
+
+We also exclude participants with any missing data:
+
+```{r}
+# 9 speakers * 12 utterances = 108 items
+TOTAL = 108
+
+df_counts = df_critical %>%
+  group_by(subject) %>%
+  summarise(count = n())
+
+df_exclude = df_counts %>%
+  filter(count < TOTAL)
+
+df_critical = df_critical %>%
+  filter((subject %in% df_exclude$subject) == FALSE)
+nrow(df_critical)
+length(unique(df_critical$subject))
+```
+
+
+## Additional preprocessing
+
+```{r}
+## Here, we reset condition labels (Request vs. Non-Request)
+df_critical$Intent = factor(fct_recode(df_critical$condition,
+                             "Request" = "request",
+                             "Non-Request" = "statement",
+                             "Non-Request" = "question"), levels = c("Non-Request", "Request"))
+
+## Here, we reset response labels (Request vs. Non-Request)
+df_critical$Interpretation = factor(df_critical$response, levels = c("Non-Request", "Request"))
+
+
+## We also create several more indicator variables for ease of plotting and merging
+df_critical = df_critical %>%
+  mutate(correct = Interpretation == Intent) %>%
+  mutate(correct_numeric = as.numeric(correct),
+         ## 1 for Request, 0 for Non-Request
+         response_numeric = as.numeric(Interpretation) - 1) %>%
+  mutate(topic = tolower(topic))
+
+# For merging with norming data
+df_critical$topic = fct_recode(df_critical$topic,
+                               "temperature" = "temp")
+
+
+```
+
+
+## Merge with norming data
+
+```{r}
+df_normed = read_csv("../../../data/processed/norming/item_means.csv")
+
+df_merged = df_critical %>%
+  inner_join(df_normed, by = c("form", "topic"))
+
+nrow(df_critical)
+nrow(df_merged)
+
+df_normed$topic %in% df_merged$topic
+
+```
+
+
+
+# Primary analyses
+
+## Q1: Does Intent predict response?
+
+### Descriptive
+
+```{r}
+mean(df_merged$correct)
+
+df_merged %>%
+  group_by(Intent) %>%
+  summarise(mean_request = mean(response_numeric))
+
+df_merged %>%
+  group_by(form, Intent) %>%
+  summarise(mean_request = mean(response_numeric))
+
+df_merged %>%
+  group_by(form) %>%
+  summarise(mean_request = mean(response_numeric))
+
+```
+
+
+### Visualization
+
+```{r}
+df_merged %>%
+  ggplot(aes(x = form, y = response_numeric, color = Intent)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  theme_minimal() +
+  ggtitle("Request interpretations by condition") +
+  xlab("Condition") +
+  ylab("Percent choosing 'request'") +
+  scale_y_continuous(limits = c(0, 1))
+
+
+df_merged %>%
+  ggplot(aes(x = mean_request, 
+             y = response_numeric, 
+             color = Intent,
+             shape = Intent)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 1*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 1*sd(x)/sqrt(length(x))},
+                geom= 'pointrange') +
+  theme_minimal() +
+  ggtitle("Request interpretations by p(request)") +
+  xlab("P(request)") +
+  ylab("Proportion choosing 'request'") +
+  scale_y_continuous(limits = c(0, 1))
+
+ggsave("../../../Figures/exp_scaled_priors.png", dpi = 300)
+
+df_merged %>%
+  group_by(mean_request) %>%
+  summarise(p_request = mean(response_numeric),
+            count = n())
+```
+
+### Analysis
+
+We ask whether `Intent` explains variance in `Response`, above and beyond other factors like `Prior request probability` and `Form`.
+
+
+```{r}
+
+model_full = glmer(data=df_merged, 
+                Interpretation ~ Intent + form + mean_request +
+                  (1 + Intent | topic) +
+             (1 + Intent + mean_request | subject) +
+               (1 | speaker),
+           control=glmerControl(optimizer="bobyqa"),
+         family=binomial())
+
+summary(model_full)
+
+model_no_intent = glmer(data=df_merged, 
+                Interpretation ~ form + mean_request +
+                  (1 + Intent | topic) +
+             (1 + Intent + mean_request | subject) +
+               (1 | speaker),
+           control=glmerControl(optimizer="bobyqa"),
+         family=binomial())
+
+
+anova(model_full, model_no_intent)
+
+```
+
+
+We can also visualize the coefficients from this model:
+
+```{r}
+df_tidy = broom.mixed::tidy(model_full)
+
+df_tidy %>%
+  filter(effect == "fixed") %>%
+  filter(term != "(Intercept)") %>%
+  ggplot(aes(x = term,
+             y = estimate)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(ymin = estimate - 2*std.error, 
+                    ymax = estimate + 2*std.error), 
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x = "Predictor",
+       y = "Estimate") +
+  theme_minimal()
+```
+
+
+## Q2: Which acoustic features predict pragmatic interpretation?
+
+### Load acoustic features data
+
+```{r}
+df_audio = read_csv("../../../data/processed/audio/audio_features_scaled_stimuli.csv")
+df_audio$label = factor(df_audio$label)
+
+df_audio$condition = fct_recode(df_audio$label,
+                            "Request" = "ir",
+                            "Non-Request" = "literal")
+
+df_audio$speaker = factor(df_audio$speaker)
+
+df_audio = df_audio %>% 
+  group_by(speaker) %>% 
+  mutate(mean_f0_z_score = scale(mean_f0),
+         duration_f0_z_score = scale(duration_f0),
+         range_f0_z_score = scale(range_f0),
+         sd_f0_z_score = scale(sd_f0),
+         slope_f0_z_score = scale(slope_f0),
+         mean_intensity_z_score = scale(mean_intensity),
+         sd_intensity_z_score = scale(sd_intensity)
+         )
+```
+
+### Merge with behavioral data
+
+```{r}
+
+df_audio = df_audio %>%
+  select(condition, speaker, stimNum, mean_f0_z_score, duration_f0_z_score, range_f0_z_score,
+         sd_f0_z_score, slope_f0_z_score, mean_intensity_z_score, sd_intensity_z_score) %>%
+  mutate(speaker = factor(speaker))
+nrow(df_audio)
+
+df_merged_audio = df_merged %>%
+  mutate(speaker = factor(speaker)) %>%
+  inner_join(df_audio, on = c("condition", "speaker", "stimNum"))
+nrow(df_merged_audio)
+
+df_merged_audio$form = factor(df_merged_audio$form, levels=c("nonconventional", "conventional"))
+
+
+```
+
+
+
+### Analysis
+
+Now we ask whether adding acoustic features to the model predicts participants' **responses**, above and beyond the variance explained by *form* and *speaker* (and their interaction). 
+
+To do this, we compare each model in turn, successively dropping out different acoustic features.
+
+Random effects include random intercepts for subjects and items. Including a random slope for the effect of form for items (as in the models above) prevents the models from converging. (That said, analysis of these models suggests very similar results.)
+
+### Do the features predict participants' predicted label?
+
+```{r}
+
+model_response_full = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score * form +
+                       duration_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+
+
+summary(model_response_full)
+
+
+df_tidy = broom.mixed::tidy(model_response_full)
+
+df_tidy %>%
+  filter(effect == "fixed") %>%
+  ggplot(aes(x = reorder(term, estimate),
+             y = estimate)) +
+  geom_point() +
+  coord_flip() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  geom_errorbar(aes(ymin = estimate - 2*std.error, 
+                    ymax = estimate + 2*std.error), 
+                width=.2,
+                position=position_dodge(.9)) +
+  labs(x = "Predictor",
+       y = "Estimate") +
+  theme_minimal()
+```
+
+
+#### F0 slope
+
+```{r}
+model_response_no_slope_interaction = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score +
+                      mean_f0_z_score * form +
+                      duration_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+
+model_response_no_slope = glmer(data = df_merged_audio,
+                      Interpretation ~ mean_f0_z_score * form +
+                       duration_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+```
+
+
+```{r}
+anova(model_response_full, model_response_no_slope_interaction)
+anova(model_response_no_slope_interaction, model_response_no_slope)
+
+```
+
+#### Mean F0
+
+```{r}
+model_response_no_mean_f0_interaction = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score +
+                       duration_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+
+model_response_no_mean_f0 = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                       duration_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+```
+
+
+```{r}
+anova(model_response_full, model_response_no_mean_f0_interaction)
+anova(model_response_no_mean_f0_interaction, model_response_no_mean_f0)
+
+```
+
+#### F0 duration (number of voiced frames)
+
+```{r}
+model_response_no_f0_dur_interaction = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score * form +
+                       duration_f0_z_score +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+
+model_response_no_f0_dur = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score * form +
+                       range_f0_z_score * form +
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+```
+
+
+```{r}
+anova(model_response_full, model_response_no_f0_dur_interaction)
+anova(model_response_no_f0_dur_interaction, model_response_no_f0_dur)
+
+```
+
+
+#### Mean Intensity
+
+```{r}
+model_response_no_mean_intensity_interaction = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score * form +
+                       duration_f0_z_score * form +
+                       range_f0_z_score * form+
+                       sd_f0_z_score * form +
+                       mean_intensity_z_score +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+
+model_response_no_mean_intensity = glmer(data = df_merged_audio,
+                      Interpretation ~ slope_f0_z_score * form +
+                        mean_f0_z_score * form +
+                        range_f0_z_score * form+
+                        sd_f0_z_score * form +
+                       duration_f0_z_score * form +
+                       sd_intensity_z_score * form +
+                        (1 | subject) + 
+                        (1 | speaker) +
+                        (1 | stimNum),
+                       control=glmerControl(optimizer="bobyqa"),
+                       family = binomial())
+```
+
+
+```{r}
+anova(model_response_full, model_response_no_mean_intensity_interaction)
+anova(model_response_no_mean_intensity_interaction, model_response_no_mean_intensity)
+
+```
+
+### Multiple comparisons corrections
+
+```{r}
+p1 = anova(model_response_full, model_response_no_slope_interaction)$`Pr(>Chisq)`[2]
+p2 = anova(model_response_no_slope_interaction, model_response_no_slope)$`Pr(>Chisq)`[2]
+p3 = anova(model_response_full, model_response_no_mean_f0_interaction)$`Pr(>Chisq)`[2]
+p4 = anova(model_response_no_mean_f0_interaction, model_response_no_mean_f0)$`Pr(>Chisq)`[2]
+p5 = anova(model_response_full, model_response_no_f0_dur_interaction)$`Pr(>Chisq)`[2]
+p6 = anova(model_response_no_f0_dur_interaction, model_response_no_f0_dur)$`Pr(>Chisq)`[2]
+p7 = anova(model_response_full, model_response_no_mean_intensity_interaction)$`Pr(>Chisq)`[2]
+p8 = anova(model_response_no_mean_intensity_interaction, model_response_no_mean_intensity)$`Pr(>Chisq)`[2]
+
+p.adjust(c(p1, p2, p3, p4, p5, p6, p7, p8), method="holm")
+
+```
+
+
+## Acoustic feature visualizations
+
+```{r include=FALSE}
+library(ggridges)
+```
+
+
+(Note: These visualizations were not part of the original pre-registration file.)
+
+```{r}
+df_merged_audio %>%
+  ggplot(aes(x = duration_f0_z_score,
+             y = form,
+             fill = Interpretation)) +
+  geom_density_ridges2(aes(height = ..density..), 
+                       color=gray(0.25), alpha = 0.5, 
+                       scale=0.85, size=0.75, stat="density") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = slope_f0_z_score,
+             y = form,
+             fill = Interpretation)) +
+  geom_density_ridges2(aes(height = ..density..), 
+                       color=gray(0.25), alpha = 0.5, 
+                       scale=0.85, size=0.75, stat="density") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = mean_f0_z_score,
+             y = form,
+             fill = Interpretation)) +
+  geom_density_ridges2(aes(height = ..density..), 
+                       color=gray(0.25), alpha = 0.5, 
+                       scale=0.85, size=0.75, stat="density") +
+  geom_vline(xintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = duration_f0_z_score,
+             fill = Interpretation)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = slope_f0_z_score,
+             fill = Interpretation)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = mean_f0_z_score,
+             fill = Interpretation)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = duration_f0_z_score,
+             color = Interpretation)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = slope_f0_z_score,
+             color = Interpretation)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = mean_f0_z_score,
+             color = Interpretation)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  theme_minimal()
+```
+
+
+
+# Demographics (added to pre-registered file)
+
+The original pre-registered file did not contain a section for reporting participant demographics. That is done here.
+
+```{r}
+df_demo = df_merged %>%
+  group_by(subject, Gender, Native_Speaker, Age) %>%
+  summarise(total_rt = sum(rt) / 1000)
+
+table(df_demo$Gender)
+table(df_demo$Native_Speaker)
+
+  
+mean(df_demo$Age, na.rm = TRUE)
+median(df_demo$Age, na.rm = TRUE)
+sd(df_demo$Age, na.rm = TRUE)
+range(df_demo$Age, na.rm = TRUE)
+
+## Average time
+mean(df_demo$total_rt / 60)
+median(df_demo$total_rt / 60)
+```
+
+# Final visualizations (added to pre-registered file)
+
+```{r}
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = duration_f0_z_score,
+             color = Interpretation)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(x = "Form",
+       y = "Number of Voiced Frames",
+       color = "Interpretation") +
+  theme_minimal()
+
+ggsave("../../../Figures/exp_scaled_duration_interpretation.png", dpi = 300)
+
+df_merged_audio %>%
+  ggplot(aes(x = form,
+             y = slope_f0_z_score,
+             color = Interpretation)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(x = "Form",
+       y = "F0 Slope",
+       color = "Interpretation") +
+  theme_minimal()
+
+ggsave("../../../Figures/exp_scaled_f0_slope_interpretation.png", dpi = 300)
+```
+
