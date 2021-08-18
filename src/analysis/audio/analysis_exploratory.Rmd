@@ -1,0 +1,291 @@
+---
+title: "Analysis of acoustic features: Exploratory"
+output:
+  html_document:
+    toc: yes
+    toc_float: yes
+---
+
+
+```{r include=FALSE}
+library(tidyverse)
+library(forcats)
+library(lme4)
+library(broom)
+library(lmerTest)
+
+```
+
+# Load data
+
+```{r}
+# setwd("/Users/seantrott/Dropbox/UCSD/Research/IndirectSpeechActs/Prosody/pros_scaled/src/analysis/audio")
+df_audio = read_csv("../../../data/processed/audio/audio_features_final_segment.csv")
+
+df_audio$label = factor(df_audio$intent2)
+df_audio$form = factor(df_audio$form)
+
+nrow(df_audio)
+table(df_audio$speaker, df_audio$label)
+
+## How many duplicates
+df_audio %>% 
+  group_by(hash) %>% 
+  filter(n()>1)
+
+## Get distinct
+df_audio = df_audio %>%
+  distinct(hash, .keep_all = TRUE)
+
+nrow(df_audio)
+
+```
+
+
+## Descriptive statistics
+
+```{r}
+by_intent = df_audio %>%
+  group_by(form, label) %>%
+  summarise(mean_change = mean(overall_change),
+            sd_change = sd(overall_change),
+            mean_slope = mean(f0_slope),
+            sd_slope = sd(f0_slope))
+
+by_intent
+```
+
+## Normalize variables by speaker
+
+Now we z-score our variables, by speaker. E.g., for each speaker, we normalize each observation by z-scoring it *to that speaker*.
+
+```{r}
+df_audio = df_audio %>% 
+  group_by(speaker) %>% 
+  mutate(overall_change_z = mean(overall_change),
+         f0_slope_z = mean(f0_slope)
+         )
+
+```
+
+
+
+
+
+# Machine learning classifier
+
+## Do acoustic features help us classify intent overall?
+
+
+```{r}
+set.seed(123)
+
+df_audio$index = c(1: nrow(df_audio))
+prob_outputs = c()
+for (iterating_index in c(1:nrow(df_audio))) {
+  
+  train = df_audio %>%
+    filter(index != iterating_index)
+  
+  test = df_audio %>%
+    filter(index == iterating_index)
+  
+  model_core = glm(data = train,
+                  label ~ 
+                    overall_change * form + 
+                    f0_slope * form,
+                   family = binomial())
+
+  probabilities = predict(model_core, test, type="response")
+
+  prob_outputs[iterating_index] = probabilities
+}
+
+
+df_audio$lr_probs = prob_outputs
+
+df_audio %>%
+  ggplot(aes(x = lr_probs,
+             fill = label)) + 
+  geom_density(alpha = .6) +
+  labs(x = "P(Request)",
+       title = "Logistic regression predictions by speaker intent",
+       fill = "Intent") +
+  theme_minimal()
+
+df_audio$lr_prediction = ifelse(df_audio$lr_probs > 0.5,
+                             "request","non-request")
+
+df_audio$lr_correct = df_audio$lr_prediction == df_audio$label
+mean(df_audio$lr_correct)
+```
+
+We see that a logistic regression classifier equipped with all seven features gives us `r scales::percent(mean(df_audio$lr_correct))` accuracy on held-out test items.
+
+
+
+# Which cues are particularly predictive?
+
+Now, we use nested model comparisons to determine *which cues* are particularly predictive of intent.
+
+## Interaction between form and intent
+
+First, we consider the interaction for each dependent variable.
+
+
+```{r}
+
+df_audio$form = factor(df_audio$form, levels = c("non-conventional", "conventional"))
+model_change = lmer(data = df_audio,
+                overall_change ~ intent2 * form +
+                    (1 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_reduced = lmer(data = df_audio,
+                overall_change ~ intent2 + form +
+                    (1 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_change, model_reduced)
+summary(model_change)
+
+model_slope = lmer(data = df_audio,
+                f0_slope ~ intent2 * form +
+                    (1 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_reduced = lmer(data = df_audio,
+                f0_slope ~ intent2 + form +
+                    (1 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_slope, model_reduced)
+summary(model_slope)
+
+
+```
+
+
+## Subset analysis
+
+We also consider the main effect of `Intent` for conventional and non-conventional items separately.
+
+### Conventional items
+
+```{r}
+
+model_change = lmer(data = filter(df_audio, form == "conventional"),
+                overall_change ~ intent2 +
+                    (1 +intent2 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_null = lmer(data = filter(df_audio, form == "conventional"),
+                overall_change ~ 
+                    (1 +intent2 | topic) +
+                    (1 +intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_change, model_null)
+summary(model_change)
+
+model_slope = lmer(data = filter(df_audio, form == "conventional"),
+                f0_slope ~ intent2 +
+                    (1 +intent2 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_null = lmer(data = filter(df_audio, form == "conventional"),
+                f0_slope ~ 
+                    (1 +intent2 | topic) +
+                    (1 +intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_slope, model_null)
+summary(model_slope)
+```
+
+### Non-conventional
+
+```{r}
+
+model_change = lmer(data = filter(df_audio, form == "non-conventional"),
+                overall_change ~ intent2 +
+                    (1 +intent2 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_null = lmer(data = filter(df_audio, form == "non-conventional"),
+                overall_change ~ 
+                    (1 +intent2 | topic) +
+                    (1 +intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_change, model_null)
+summary(model_change)
+
+model_slope = lmer(data = filter(df_audio, form == "non-conventional"),
+                f0_slope ~ intent2 +
+                    (1 +intent2 | topic) +
+                    (1 + intent2 | speaker),
+                 REML = FALSE)
+
+
+model_null = lmer(data = filter(df_audio, form == "non-conventional"),
+                f0_slope ~ 
+                    (1 +intent2 | topic) +
+                    (1 +intent2 | speaker),
+                 REML = FALSE)
+
+anova(model_slope, model_null)
+summary(model_slope)
+```
+
+
+## Visualizations 
+
+
+```{r}
+df_audio %>%
+  ggplot(aes(x = form,
+             y = f0_slope,
+             color = label)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(x = "Form",
+       y = "F0 Slope",
+       color = "Intent") +
+  theme_minimal()
+
+df_audio %>%
+  ggplot(aes(x = form,
+             y = overall_change,
+             color = label)) +
+  stat_summary (fun = function(x){mean(x)},
+                fun.min = function(x){mean(x) - 2*sd(x)/sqrt(length(x))},
+                fun.max = function(x){mean(x) + 2*sd(x)/sqrt(length(x))},
+                geom= 'pointrange', 
+                position=position_dodge(width=0.95)) +
+  geom_hline(yintercept = 0, linetype = "dotted") +
+  labs(x = "Form",
+       y = "Degree of Rise (final - initial)",
+       color = "Intent") +
+  theme_minimal()
+
+ggsave("../../../Figures/supplementary_overall_change.png", dpi = 300)
+
+```
+

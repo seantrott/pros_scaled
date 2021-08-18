@@ -9,7 +9,6 @@ import parselmouth
 from scipy.stats import linregress
 from tqdm import tqdm
 
-
 ## Item numbers
 topic_to_stimNum = {'car': 1,
 					'back': 2,
@@ -38,10 +37,11 @@ def extract_features(f0, name="f0", window=3):
 
 def extract_intensity_features(f0, name="f0", window=3):
 	"""Extract features from component, e.g. f0 or intensity."""
-	slope_f0 = linregress(list(range(len(f0))), f0).slope
+	intensity_frames = [i for i in f0 if i > 0]
 
 	return {'mean_{name}'.format(name=name): np.mean(f0),
-			'sd_{name}'.format(name=name): np.std(f0)}
+			'sd_{name}'.format(name=name): np.std(f0),
+			'duration_{name}'.format(name=name): len(intensity_frames)}
 
 def extract_file_features(filepath):
 	"""Extract acoustic features from sound file."""
@@ -127,5 +127,5 @@ if __name__ == "__main__":
 	args = vars(parser.parse_args())
 
 	df = main(**args)
-	df.to_csv("data/processed/exp1/audio_features_{x}.csv".format(x=args['dataset']))
+	# df.to_csv("data/processed/exp1/audio_features_{x}.csv".format(x=args['dataset']))
 
