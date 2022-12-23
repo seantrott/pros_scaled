@@ -351,15 +351,6 @@ nrow(df_audio)</code></pre>
 ## 3 non-conventional non-request       -8.09      30.4    -0.371     0.839
 ## 4 non-conventional request           -1.78      33.0    -0.420     0.509</code></pre>
 </div>
-<div id="normalize-variables-by-speaker" class="section level2">
-<h2>Normalize variables by speaker</h2>
-<p>Now we z-score our variables, by speaker. E.g., for each speaker, we normalize each observation by z-scoring it <em>to that speaker</em>.</p>
-<pre class="r"><code>df_audio = df_audio %&gt;% 
-  group_by(speaker) %&gt;% 
-  mutate(overall_change_z = mean(overall_change),
-         f0_slope_z = mean(f0_slope)
-         )</code></pre>
-</div>
 </div>
 <div id="machine-learning-classifier" class="section level1">
 <h1>Machine learning classifier</h1>
@@ -478,7 +469,9 @@ model_change = lmer(data = df_audio,
 ## intnt2rqst:  0.319 -0.706 -0.637
 ## convergence code: 0
 ## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>model_slope = lmer(data = df_audio,
+<pre class="r"><code>p_change = anova(model_change, model_reduced)$`Pr(&gt;Chisq)`[2]
+
+model_slope = lmer(data = df_audio,
                 f0_slope ~ intent2 * form +
                     (1 | topic) +
                     (1 + intent2 | speaker),
@@ -539,6 +532,10 @@ anova(model_slope, model_reduced)</code></pre>
 ## intent2rqst -0.472              
 ## formcnvntnl -0.497  0.418       
 ## intnt2rqst:  0.322 -0.646 -0.648</code></pre>
+<pre class="r"><code>p_slope = anova(model_slope, model_reduced)$`Pr(&gt;Chisq)`[2]</code></pre>
+<p>Now we correct for multiple comparisons:</p>
+<pre class="r"><code>p.adjust(c(p_change, p_slope), method = &quot;holm&quot;)</code></pre>
+<pre><code>## [1] 0.002490626 0.187403091</code></pre>
 </div>
 <div id="subset-analysis" class="section level2">
 <h2>Subset analysis</h2>
@@ -605,7 +602,10 @@ anova(model_slope, model_reduced)</code></pre>
 ## intent2rqst -0.319
 ## convergence code: 0
 ## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>model_slope = lmer(data = filter(df_audio, form == &quot;conventional&quot;),
+<pre class="r"><code>p_change = anova(model_change, model_null)$`Pr(&gt;Chisq)`[2]
+
+
+model_slope = lmer(data = filter(df_audio, form == &quot;conventional&quot;),
                 f0_slope ~ intent2 +
                     (1 +intent2 | topic) +
                     (1 + intent2 | speaker),
@@ -661,6 +661,10 @@ anova(model_slope, model_reduced)</code></pre>
 ## intent2rqst -0.193
 ## convergence code: 0
 ## boundary (singular) fit: see ?isSingular</code></pre>
+<pre class="r"><code>p_slope = anova(model_slope, model_null)$`Pr(&gt;Chisq)`[2]</code></pre>
+<p>Now we correct for multiple comparisons:</p>
+<pre class="r"><code>p.adjust(c(p_change, p_slope), method = &quot;holm&quot;)</code></pre>
+<pre><code>## [1] 0.03265681 0.03244186</code></pre>
 </div>
 <div id="non-conventional" class="section level3">
 <h3>Non-conventional</h3>
@@ -718,7 +722,10 @@ anova(model_slope, model_reduced)</code></pre>
 ## intent2rqst -0.486
 ## convergence code: 0
 ## boundary (singular) fit: see ?isSingular</code></pre>
-<pre class="r"><code>model_slope = lmer(data = filter(df_audio, form == &quot;non-conventional&quot;),
+<pre class="r"><code>p_change = anova(model_change, model_null)$`Pr(&gt;Chisq)`[2]
+
+
+model_slope = lmer(data = filter(df_audio, form == &quot;non-conventional&quot;),
                 f0_slope ~ intent2 +
                     (1 +intent2 | topic) +
                     (1 + intent2 | speaker),
@@ -772,6 +779,10 @@ anova(model_slope, model_reduced)</code></pre>
 ## intent2rqst -0.683
 ## convergence code: 0
 ## boundary (singular) fit: see ?isSingular</code></pre>
+<pre class="r"><code>p_slope = anova(model_slope, model_null)$`Pr(&gt;Chisq)`[2]</code></pre>
+<p>Now we correct for multiple comparisons:</p>
+<pre class="r"><code>p.adjust(c(p_change, p_slope), method = &quot;holm&quot;)</code></pre>
+<pre><code>## [1] 0.2287608 0.6010305</code></pre>
 </div>
 </div>
 <div id="visualizations" class="section level2">

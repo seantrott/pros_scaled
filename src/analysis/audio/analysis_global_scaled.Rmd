@@ -158,7 +158,16 @@ df_audio_filtered %>%
   labs(x = "P(Request)",
        title = "Logistic regression predictions by speaker intent",
        fill = "Intent") +
-  theme_minimal()
+  theme_minimal() +
+theme(
+  axis.title.x = element_text(size = 16),
+  axis.text.x = element_text(size = 14),
+  axis.text.y = element_text(size = 10),
+  axis.title.y = element_text(size = 16),
+  strip.text.x = element_text(size = 16),
+  title = element_text(size = 16),
+  legend.text = element_text(size = 20),
+  legend.title = element_text(size = 20))
 
 ggsave("../../../Figures/classifier.png", dpi = 300)
 
